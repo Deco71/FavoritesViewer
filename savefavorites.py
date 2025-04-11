@@ -1,7 +1,46 @@
-import json
+import datetime
 from collections import defaultdict
-from pathlib import Path
 import os
+import regex
+from bs4 import BeautifulSoup
+import shutil
+import subprocess
+
+out_dir = "preferiti"
+
+def execute(file, path, bookmarks, bookmark_index=0):
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    while len(file) != 0:
+        row = file.pop(0)
+        if "<DL><p>" in row:
+            pass
+        elif "<DT><H3" in row:
+            nameUnparsed = row.split("\">")[1].split("<")[0]
+            name = regex.sub(r'[^\s\p{L}]+', '', nameUnparsed)
+            if not os.path.exists(path + "/" + name):
+                os.makedirs(path + "/" + name)
+            path = path + "/" + name
+        elif "<DT><A" in row:
+            nameUnparsed = row.split("\">")[1].split("<")[0]
+            name = regex.sub(r'[^\s\p{L}]+', '', nameUnparsed)
+            create_url_shortcut(name, bookmarks[bookmark_index].get("href"), row, path)
+            bookmark_index += 1
+        elif "</DL><p>" in row:
+            path = path.split("/")
+            path.pop()
+            path = "/".join(path)
+    return bookmark_index
+
+
+def create_url_shortcut(name, url, data, save_path="."):
+    file_path = f"{save_path}/{name}.url"
+    if os.path.exists(file_path):
+        return
+    with open(file_path, "w+") as file:
+        file.write(f"[InternetShortcut]\n")
+        file.write(f"URL={url}\n")
+        return
 
 def estrai_url_da_file(filepath):
     with open(filepath, 'r') as f:
@@ -46,7 +85,7 @@ def render_folder(name, content, indent=1):
     lines = []
     indent_str = '    ' * indent
     if name and name != '.':
-        lines.append(f'{indent_str}<DT><H3>{name}</H3>')
+        lines.append(f'{indent_str}<DT><H3 ADD_DATE="0">{name}</H3>')
         lines.append(f'{indent_str}<DL><p>')
     for key, val in content.items():
         if key == '_links':
@@ -72,15 +111,37 @@ def generate_bookmark_file(bookmarks):
     lines.append('</DL><p>')
     return '\n'.join(lines)
 
-# Salva su file
-if "__main__" == __name__:  
-    # Imposta qui il percorso della tua cartella principale
-    cartella = "out"
-    risultato = raccogli_url(cartella)
+if "__main__" == __name__:
 
+    favorites_file = input("Inserisci il nome del file dei preferiti: ")
+    try:
+        with open(favorites_file, "r", encoding="utf-8") as file:
+            soup = BeautifulSoup(file, "html.parser")
+    except FileNotFoundError:
+        print(f"Il file '{favorites_file}' non esiste.")
+        exit(1)
+
+    # Apertura
+    bookmarks = soup.find_all("a")
+    created = 0
+    with open(favorites_file, "r", encoding='utf-8') as f:
+        favorites = f.read()
+        file = favorites.splitlines()
+        created = execute(file, out_dir, bookmarks)
+    print(f"Ho elaborato {created} preferiti")
+
+    subprocess.Popen(f'explorer "{out_dir}"')
+
+    input("Cartella per la modifica aperta, premere invio per completare l'operazione di salvataggio...")
+
+    #Salvataggio
+    cartella = out_dir
+    risultato = raccogli_url(cartella)
     print(f"Ho trovato {len(risultato)} bookmarks")
-    
     html_output = generate_bookmark_file(risultato)
-    with open("bookmarks_to_save.html", "w", encoding='utf-8') as f:
+    today = datetime.datetime.now()
+    today_date = today.strftime("%Y-%m-%d") 
+    with open("preferiti_"+today_date+".html", "w", encoding='utf-8') as f:
         f.write(html_output)
+    shutil.rmtree(out_dir)
     print("File 'bookmarks.html' creato correttamente.")
