@@ -112,36 +112,53 @@ def generate_bookmark_file(bookmarks):
     return '\n'.join(lines)
 
 if "__main__" == __name__:
+    if not os.path.exists(out_dir):
+        found = False
+        while not found:
+            # Apertura
+            favorites_file = input("Inserisci il nome del file dei preferiti: ")
+            try:
+                with open(favorites_file, "r", encoding="utf-8") as file:
+                    soup = BeautifulSoup(file, "html.parser")
+                    found = True
+            except FileNotFoundError:
+                print(f"Il file '{favorites_file}' non esiste.")
 
-    favorites_file = input("Inserisci il nome del file dei preferiti: ")
-    try:
-        with open(favorites_file, "r", encoding="utf-8") as file:
-            soup = BeautifulSoup(file, "html.parser")
-    except FileNotFoundError:
-        print(f"Il file '{favorites_file}' non esiste.")
-        exit(1)
+        # Creazione struttura
+        bookmarks = soup.find_all("a")
+        created = 0
+        with open(favorites_file, "r", encoding='utf-8') as f:
+            favorites = f.read()
+            file = favorites.splitlines()
+            created = execute(file, out_dir, bookmarks)
+        print(f"Ho elaborato {created} preferiti")
 
-    # Apertura
-    bookmarks = soup.find_all("a")
-    created = 0
-    with open(favorites_file, "r", encoding='utf-8') as f:
-        favorites = f.read()
-        file = favorites.splitlines()
-        created = execute(file, out_dir, bookmarks)
-    print(f"Ho elaborato {created} preferiti")
+        # Apertura Cartella
+        subprocess.Popen(f'explorer "{out_dir}"')
 
-    subprocess.Popen(f'explorer "{out_dir}"')
-
-    input("Cartella per la modifica aperta, premere invio per completare l'operazione di salvataggio...")
+        input("Cartella per la modifica aperta, premere invio per completare l'operazione di salvataggio...")
+    else:
+        print("Cartella per la modifica già esistente, procedo con il salvataggio dei preferiti...")
 
     #Salvataggio
     cartella = out_dir
     risultato = raccogli_url(cartella)
     print(f"Ho trovato {len(risultato)} bookmarks")
     html_output = generate_bookmark_file(risultato)
+
+    # Creazione del nome del file HTML
     today = datetime.datetime.now()
     today_date = today.strftime("%Y-%m-%d") 
-    with open("preferiti_"+today_date+".html", "w", encoding='utf-8') as f:
+    filename = "preferiti-"+today_date+".html"
+    filenameToCheck = filename
+    omonomini = 0
+    while os.path.exists(filenameToCheck):
+        omonomini += 1
+        filenameToCheck = filename.split(".")[0] + " (" + str(omonomini) + ")" + "." + filename.split(".")[1]
+    filename = filenameToCheck
+
+    # Scrittura del file HTML
+    with open(filename, "w", encoding='utf-8') as f:
         f.write(html_output)
     shutil.rmtree(out_dir)
-    print("File 'bookmarks.html' creato correttamente.")
+    print("File creato correttamente con il nome " + filename)
