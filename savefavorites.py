@@ -8,6 +8,15 @@ import subprocess
 
 out_dir = "preferiti"
 
+def parse_name(nameUnparsed):
+    name = regex.sub(r'[^\s\p{L}\p{N}-_’\']+', '', nameUnparsed)
+    name = name.strip()
+    if len(name) > 200:
+        #max length 200
+        name = name[:200]
+    return name
+
+
 def execute(file, path, bookmarks, bookmark_index=0):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -17,16 +26,14 @@ def execute(file, path, bookmarks, bookmark_index=0):
             pass
         elif "<DT><H3" in row:
             nameUnparsed = row.split("\">")[1].split("<")[0]
-            name = regex.sub(r'[^\s\p{L}\p{N}-_’\']+', '', nameUnparsed)
-            name = name.strip()
+            name = parse_name(nameUnparsed)
             if not os.path.exists(path + "/" + name):
                 os.makedirs(path + "/" + name)
                 print(f"Creata la cartella {path + '/' + name}")
                 path = path + "/" + name
         elif "<DT><A" in row:
             nameUnparsed = row.split("\">")[1].split("<")[0]
-            name = regex.sub(r'[^\s\p{L}\p{N}-_’\']+', '', nameUnparsed)
-            name = name.strip()
+            name = parse_name(nameUnparsed)
             create_url_shortcut(name, bookmarks[bookmark_index].get("href"), path)
             bookmark_index += 1
         elif "</DL><p>" in row:
