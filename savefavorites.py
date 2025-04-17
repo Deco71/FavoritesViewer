@@ -17,14 +17,17 @@ def execute(file, path, bookmarks, bookmark_index=0):
             pass
         elif "<DT><H3" in row:
             nameUnparsed = row.split("\">")[1].split("<")[0]
-            name = regex.sub(r'[^\s\p{L}]+', '', nameUnparsed)
+            name = regex.sub(r'[^\s\p{L}\p{N}-_’\']+', '', nameUnparsed)
+            name = name.strip()
             if not os.path.exists(path + "/" + name):
                 os.makedirs(path + "/" + name)
-            path = path + "/" + name
+                print(f"Creata la cartella {path + '/' + name}")
+                path = path + "/" + name
         elif "<DT><A" in row:
             nameUnparsed = row.split("\">")[1].split("<")[0]
-            name = regex.sub(r'[^\s\p{L}]+', '', nameUnparsed)
-            create_url_shortcut(name, bookmarks[bookmark_index].get("href"), row, path)
+            name = regex.sub(r'[^\s\p{L}\p{N}-_’\']+', '', nameUnparsed)
+            name = name.strip()
+            create_url_shortcut(name, bookmarks[bookmark_index].get("href"), path)
             bookmark_index += 1
         elif "</DL><p>" in row:
             path = path.split("/")
@@ -33,13 +36,19 @@ def execute(file, path, bookmarks, bookmark_index=0):
     return bookmark_index
 
 
-def create_url_shortcut(name, url, data, save_path="."):
+def create_url_shortcut(name, url, save_path="."):
     file_path = f"{save_path}/{name}.url"
     if os.path.exists(file_path):
         return
-    with open(file_path, "w+") as file:
-        file.write(f"[InternetShortcut]\n")
-        file.write(f"URL={url}\n")
+    try:
+        with open(file_path, "w+") as file:
+            print(f"Creata la scorciatoia {file_path}")
+            file.write(f"[InternetShortcut]\n")
+            file.write(f"URL={url}\n")
+            return
+    except FileNotFoundError:
+        print(f"Impossibile creare il file {file_path}. Assicurati che il percorso esista.")
+        exit(1)
         return
 
 def estrai_url_da_file(filepath):
