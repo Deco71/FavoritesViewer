@@ -30,7 +30,9 @@ def execute(file, path, bookmarks, bookmark_index=0):
             if not os.path.exists(path + "/" + name):
                 os.makedirs(path + "/" + name)
                 print(f"Creata la cartella {path + '/' + name}")
-                path = path + "/" + name
+            else:
+                print(f"La cartella {path + '/' + name} esiste già, non la creo")
+            path = path + "/" + name
         elif "<DT><A" in row:
             nameUnparsed = row.split("\">")[1].split("<")[0]
             name = parse_name(nameUnparsed)
@@ -49,7 +51,6 @@ def create_url_shortcut(name, url, save_path="."):
         return
     try:
         with open(file_path, "w+") as file:
-            print(f"Creata la scorciatoia {file_path}")
             file.write(f"[InternetShortcut]\n")
             file.write(f"URL={url}\n")
             return
