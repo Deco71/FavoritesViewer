@@ -29,7 +29,6 @@ def execute(file, path, bookmarks, bookmark_index=0):
             name = parse_name(nameUnparsed)
             if not os.path.exists(path + "/" + name):
                 os.makedirs(path + "/" + name)
-                print(f"Creata la cartella {path + '/' + name}")
             else:
                 print(f"La cartella {path + '/' + name} esiste già, non la creo")
             path = path + "/" + name
@@ -48,6 +47,7 @@ def execute(file, path, bookmarks, bookmark_index=0):
 def create_url_shortcut(name, url, save_path="."):
     file_path = f"{save_path}/{name}.url"
     if os.path.exists(file_path):
+        print(f"Il file {file_path} è un doppione, non lo creo nuovamente")
         return
     try:
         with open(file_path, "w+") as file:
@@ -56,7 +56,6 @@ def create_url_shortcut(name, url, save_path="."):
             return
     except FileNotFoundError:
         print(f"Impossibile creare il file {file_path}. Assicurati che il percorso esista.")
-        exit(1)
         return
 
 def estrai_url_da_file(filepath):
